@@ -1,0 +1,63 @@
+--------------------Zadanie rekrutacyjne--------------------
+CREATE TABLE [dbo].[UZYTKOWNIK](
+	[ID_UZYTKOWNIKA] [int] IDENTITY(1,1) NOT NULL,
+	[IMIE] [varchar](100) NOT NULL,
+	[NAZWISKO] [varchar](200) NOT NULL,
+	[ADRES] [varchar](400) NOT NULL,
+	[ZDJECIE] [varbinary](max) NULL,
+	[PENSJA] [decimal](18, 2) NULL,
+	[STANOWISKO] [varchar](100) NULL,
+ CONSTRAINT [PK_UZYTKOWNIK_KIEROWCA] PRIMARY KEY CLUSTERED 
+(
+	[ID_UZYTKOWNIKA] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[HISTORIA_ZMIAN](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[DATA] [datetime] NOT NULL,
+	[TYP] [varchar](20) NOT NULL,
+	[ZMIENIL] [nvarchar](256) NOT NULL,
+	[APLIKACJA] [nvarchar](128) NOT NULL,
+	[HOST] [nvarchar](128) NOT NULL,
+	[IP] [varchar](48) NOT NULL,
+	[ID_OBIEKTU] [int] NULL,
+	[ZMIANA] [xml] NULL,
+ CONSTRAINT [PK_HISTORIA_ZMIAN] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+/*
+Na tabelę [UZYTKOWNIK] trzeba założyć trigger, który będzie logował wszelkie zmiany wpisów (INSERT,UPDATE,DELETE) do tabeli HISTORIA_ZMIAN w następujący sposób:
+DATA - data powstania zmiany
+TYP - (INSERT,UPDATE,DELETE)
+ZMIENIL - login z SQL osoby zmieniającej
+APLIKACJA - nazwa aplikacji dokonującej zmianę
+HOST - nazwa hosta dokonującego zmianę
+IP - IP osoby dokonującej zmianę
+ID_OBIEKTU - ID_UZYTKOWNIKA rekordu, który uległ zmianie
+ZMIANA - Odbicie lustrzane zmienianego rekordu w postaci:
+<RecordSet>
+	<Record>
+		<ID_UZYTKOWNIKA>3818</ID_UZYTKOWNIKA>
+		<IMIE>Rafał</IMIE>
+		<NAZWISKO>Miarka</NAZWISKO>
+		<ADRES>Poleska 123 15-001 Białystok</ADRES>
+		<PENSJA>9000</PENSJA>
+		<STANOWISKO>Programista SQL</STANOWISKO>
+	</Record>
+</RecordSet>
+
+!!UWAGI!!
+Trigger celowo pomija pole typu varbinary, bo logowanie takiego pola jest zbędne.
+Trigger powinien być napisany w taki sposób aby obsługiwał wiele rekordów równoczesnie np. operacje INSERT przy użyciu SELECTA z wieloma rekordami
+Trigger powinien być uniwersalny i całkowicie nie wrażliwy na dodawanie, usuwanie pól, modyfikacje nazwy pól w tabeli [UZYTKOWNIK]
+*/
+--------------------Zadanie dodatkowe--------------------
+/*
+Proszę napisać zapytanie które pozwoli wylistować zmiany jednego z użytkowników przy użyciu HISTORIA_ZMIAN + aktualnego wpisu z UZYTKOWNIK takich pól jak NAZWISKO,PENSJA,STANOWISKO posortowane według najbardziej aktualnych na górze
+*/

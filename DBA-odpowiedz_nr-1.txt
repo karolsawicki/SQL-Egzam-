@@ -1,0 +1,90 @@
+CREATE TRIGGER AuditTrigger ON [dbo].[UZYTKOWNIK]
+AFTER INSERT,UPDATE,DELETE
+AS
+BEGIN
+
+ 
+
+DECLARE @ID_OBIEKTU int
+DECLARE @TYP CHAR(6)
+		SET @TYP = CASE
+				WHEN EXISTS(SELECT * FROM inserted) AND EXISTS(SELECT * FROM deleted)
+					THEN 'Update'  					 
+				WHEN EXISTS(SELECT * FROM inserted)
+					THEN 'Insert'
+				WHEN EXISTS(SELECT * FROM deleted)
+					THEN 'Delete'
+				ELSE NULL
+		END
+
+		SET @ID_OBIEKTU = CASE
+			WHEN EXISTS(SELECT * FROM inserted) AND EXISTS(SELECT * FROM deleted)
+				THEN  (select d.ID_UZYTKOWNIKA FROM deleted as d )
+			WHEN EXISTS(SELECT * FROM inserted)
+				THEN  (select i.ID_UZYTKOWNIKA FROM inserted as i )
+			WHEN EXISTS(SELECT * FROM deleted)
+				THEN  (select d.ID_UZYTKOWNIKA FROM deleted as d )
+			ELSE NULL
+		END
+declare @id int
+declare @imie varchar(100)
+declare @nazwisko varchar(200)
+declare @adres varchar(400)
+declare @pensja decimal(18,2)
+declare @stanowisko varchar(100)
+
+set @id = (select d.ID_UZYTKOWNIKA FROM deleted as d )
+set @imie = (select d.IMIE FROM deleted as d )
+set @nazwisko = (select d.NAZWISKO FROM deleted as d )
+set @adres = (select d.ADRES FROM deleted as d )
+set @pensja = (select d.PENSJA FROM deleted as d )
+set @stanowisko = (select d.STANOWISKO FROM deleted as d )
+
+declare @ZMIANA xml
+set @ZMIANA = '<RecordSet>
+	<Record>
+		<ID_UZYTKOWNIKA>"' + CONVERT(varchar,@id) + '"</ID_UZYTKOWNIKA>
+		<IMIE>"' + CONVERT(varchar,@imie) + '"</IMIE>
+		<NAZWISKO>"' + CONVERT(varchar,@nazwisko) + '"</NAZWISKO>
+		<ADRES>"' + CONVERT(varchar,@adres) + '"</ADRES>
+		<PENSJA>"' + CONVERT(varchar,@pensja) + '"</PENSJA>
+		<STANOWISKO>"' + CONVERT(varchar,@stanowisko) + '"</STANOWISKO>
+	</Record>
+</RecordSet>'
+
+
+DECLARE @ZMIENIL nvarchar(256);
+DECLARE @APLIKACJA nvarchar(128);
+DECLARE @HOST nvarchar(max);
+DECLARE @IP varchar(48);
+
+
+SELECT
+@IP = conn.client_net_address,
+
+@HOST = sess.host_name,
+
+@APLIKACJA = sess.program_name,
+
+@ZMIENIL = login_name
+
+FROM sys.dm_exec_connections conn
+
+inner join sys.dm_exec_sessions sess
+
+on conn.session_ID=sess.session_ID
+
+
+
+INSERT INTO [dbo].[HISTORIA_ZMIAN]([DATA],TYP,ZMIENIL,APLIKACJA,HOST,[IP],ID_OBIEKTU,ZMIANA)
+VALUES (GETDATE(),@TYP, @ZMIENIL, @APLIKACJA,@HOST,@IP,@ID_OBIEKTU,@ZMIANA);
+
+
+END
+GO
+
+USE ITCenter
+SELECT * FROM [dbo].[HISTORIA_ZMIAN]
+FULL JOIN UZYTKOWNIK ON UZYTKOWNIK.ID_UZYTKOWNIKA=HISTORIA_ZMIAN.ID_OBIEKTU
+WHERE [ID_OBIEKTU] = 6
+ORDER BY DATA DESC
